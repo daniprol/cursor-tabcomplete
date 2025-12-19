@@ -1,6 +1,6 @@
 # Python Cursor StreamCpp Client
 
-Python port of the JS Cursor Unchained StreamCpp client. Uses `uv` + PEP 723 single-file scripts.
+Python implementation of [Cursor Unchained](https://github.com/dcrebbin/cursor-unchained), dcrebbin’s original JS StreamCpp client, rewritten here with `uv` + PEP 723 single-file scripts.
 
 ## Requirements
 
@@ -69,21 +69,43 @@ Verify Cursor picked up env (optional):
 pgrep -f Cursor | head -1 | xargs -I{} sh -c 'tr "\0" "\n" < /proc/{}/environ | grep -E "HTTPS_PROXY|NODE_EXTRA_CA_CERTS|ELECTRON_EXTRA_LAUNCH_ARGS"'
 ```
 
-## Fedora trust (MITM CA)
+## Trust the mitmproxy certificate
+
+Install the mitmproxy CA before launching Cursor through the proxy:
+
+- **Fedora / RHEL**
+  ```bash
+  sudo cp ~/.mitmproxy/mitmproxy-ca-cert.pem /etc/pki/ca-trust/source/anchors/mitmproxy-ca-cert.pem
+  sudo update-ca-trust extract
+  ```
+  `extract` rebuilds `/etc/pki/ca-trust/extracted/`.
+
+- **Debian / Ubuntu**
+  ```bash
+  sudo cp ~/.mitmproxy/mitmproxy-ca-cert.pem /usr/local/share/ca-certificates/mitmproxy.crt
+  sudo update-ca-certificates
+  ```
+  Files in `/usr/local/share/ca-certificates/` must end with `.crt`. `update-ca-certificates` rebuilds `/etc/ssl/certs/ca-certificates.crt`.
+
+- **Optional (Electron/Chromium NSS store, both distros)**
+  ```bash
+  mkdir -p ~/.pki/nssdb
+  certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -n mitmproxy -i ~/.mitmproxy/mitmproxy-ca-cert.pem
+  ```
+  Requires `certutil`/`libnss3-tools`. Use this if Cursor still reports an untrusted cert after the system store update.
+
+Remove the CA later with:
 
 ```bash
-sudo cp ~/.mitmproxy/mitmproxy-ca-cert.pem /etc/pki/ca-trust/source/anchors/mitmproxy-ca-cert.pem
-sudo update-ca-trust
-# NSS (Electron/Chromium)
-mkdir -p ~/.pki/nssdb
-certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -n mitmproxy -i ~/.mitmproxy/mitmproxy-ca-cert.pem
-```
-
-Remove CA:
-
-```bash
+# Fedora / RHEL
 sudo rm /etc/pki/ca-trust/source/anchors/mitmproxy-ca-cert.pem
-sudo update-ca-trust
+sudo update-ca-trust extract
+
+# Debian / Ubuntu
+sudo rm /usr/local/share/ca-certificates/mitmproxy.crt
+sudo update-ca-certificates
+
+# Optional: remove from NSS (both distros)
 certutil -d sql:$HOME/.pki/nssdb -D -n mitmproxy 2>/dev/null || true
 ```
 
