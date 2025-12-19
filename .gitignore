@@ -1,0 +1,13 @@
+# Python / tooling
+__pycache__/
+*.pyc
+.venv/
+.uv/
+.ruff_cache/
+
+# Env / secrets
+.env
+
+# Generated stubs / captures
+proto_gen/
+.cursor-capture/
